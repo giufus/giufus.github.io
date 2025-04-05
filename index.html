@@ -1,5 +1,477 @@
-<html>
-	<br><br>
-	<br><br>
-	<h1> An amazon coupon </h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Webcam Art - Unified Canvas</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #f0f0f0;
+            --control-bg: #2a2a2a;
+            --control-hover-bg: #3a3a3a;
+            --accent-color: #3a8eff;
+            --terminal-bg: #000000; /* Used for canvas background */
+            --terminal-green: #00ff00;
+            --terminal-white: #ffffff; /* Max brightness for white mode */
+            --font-monospace: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        html, body { height: 100%; margin: 0; }
+
+        body {
+            font-family: var(--font-monospace);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 0;
+        }
+
+        h1 { margin-bottom: 15px; flex-shrink: 0; }
+
+        /* --- Output Area (will be scaled) --- */
+        #output-area {
+            width: 100%;
+            margin: 15px auto 30px auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-height: 100px;
+            position: relative;
+            background-color: var(--bg-color);
+            transform-origin: top center;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* --- Output Canvas (Used for ALL modes) --- */
+        #output-canvas {
+            display: none; /* Hidden until streaming starts */
+            background-color: var(--terminal-bg); /* Always dark background */
+            border: 1px solid var(--control-bg);
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            max-width: 95vw;
+            max-height: 80vh;
+            image-rendering: pixelated;
+            flex-shrink: 0;
+            flex-grow: 0;
+        }
+
+        /* Hidden Div (No longer used for display) */
+        #ascii-container { display: none; }
+
+        /* Hidden video/processing canvas */
+        #video, #processing-canvas { display: none; }
+
+        /* --- Controls --- (Styles remain largely the same) */
+        .controls { /* ... */ margin:15px 0 5px 0; padding:10px 15px; background-color:rgba(42,42,42,0.9); border-radius:8px; display:flex; flex-wrap:wrap; justify-content:center; gap:10px 15px; align-items:center; max-width:95%; flex-shrink:0; position:relative; z-index:10; }
+        .control-group { /* ... */ display:flex; flex-direction:column; align-items:center; gap:5px; }
+        .control-group label, .size-label { /* ... */ font-size:0.85em; color:#ccc; }
+        button, select, input[type="number"] { /* ... */ background-color:var(--control-bg); color:var(--text-color); border:1px solid #444; padding:6px 10px; margin:0 3px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.9em; }
+        button:hover { background-color:var(--control-hover-bg); }
+        button:disabled { background-color:#555; cursor:not-allowed; opacity:0.7; }
+        select { padding:6px 8px; }
+        input[type="number"] { width:60px; text-align:center; }
+        #fullscreen-btn { padding:6px 15px; }
+        .size-slider-container { /* ... */ width:100%; max-width:250px; margin:0 auto; position:relative; }
+        .size-slider { /* ... */ width:100%; height:10px; background:var(--control-bg); border-radius:5px; position:relative; cursor:pointer; border:1px solid #444; }
+        .size-slider-fill { /* ... */ height:100%; background:var(--accent-color); border-radius:5px; width:50%; position:absolute; left:0; top:0; }
+        .size-slider-handle { /* ... */ width:18px; height:18px; background:#fff; border-radius:50%; position:absolute; top:50%; transform:translate(-50%, -50%); left:50%; cursor:grab; box-shadow:0 1px 4px rgba(0,0,0,0.4); border:1px solid #ccc; }
+        .size-slider-handle:active { cursor:grabbing; }
+        .size-slider-labels { /* ... */ display:flex; justify-content:space-between; margin-top:3px; font-size:9px; padding:0 5px; color:#aaa; }
+        .size-value-display { /* ... */ text-align:center; margin-top:5px; font-size:11px; display:flex; justify-content:center; align-items:center; gap:5px; }
+
+        /* --- Fullscreen Styles --- */
+        #output-area:fullscreen { /* ... */ background-color:var(--terminal-bg); padding:0; border:none; overflow:hidden; display:flex; justify-content:center; align-items:center; transform:none !important; }
+        /* Target only the canvas inside fullscreen area */
+        #output-area:fullscreen #output-canvas { max-width:100%; max-height:100%; width:auto; height:auto; border:none; box-shadow:none; object-fit:contain; transform:none !important; border-radius: 0; /* Reset radius for fullscreen */ }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ASCII Webcam Art</h1>
+
+        <div class="controls">
+             <!-- Controls Structure Unchanged -->
+             <div class="control-group"><label>Camera</label><div><button id="start-btn">Start</button><button id="stop-btn" disabled>Stop</button></div></div>
+             <div class="control-group"><label for="resolution">Resolution</label><select id="resolution"><option value="0.5">Highest</option><option value="1">High</option><option value="2" selected>Medium</option><option value="4">Low</option></select></div>
+             <div class="control-group"><label for="color-mode">Color Mode</label><select id="color-mode"><option value="green">Matrix Green</option><option value="white">White</option><option value="rainbow">Rainbow</option></select></div>
+             <div class="control-group"><label for="crop-percent">Crop Amount</label><select id="crop-percent"><option value="0">0%</option><option value="10">10%</option><option value="20" selected>20%</option><option value="30">30%</option><option value="40">40%</option></select></div>
+             <div class="control-group"><label class="size-label">Display Zoom</label><div class="size-slider-container"><div class="size-slider" id="size-slider"><div class="size-slider-fill" id="size-slider-fill"></div><div class="size-slider-handle" id="size-slider-handle"></div></div><div class="size-slider-labels"><span>50%</span><span>100%</span><span>600%</span></div></div><div class="size-value-display"><span id="size-value-label">Zoom: 100%</span><input type="number" id="size-input" min="50" max="600" value="100" step="10"> %</div></div>
+             <div class="control-group"><label>View</label><button id="fullscreen-btn">Fullscreen</button></div>
+        </div>
+
+        <!-- Output Area: contains only the canvas now -->
+        <div id="output-area">
+            <!-- <div id="ascii-container"></div> --> <!-- Removed from display path -->
+            <canvas id="output-canvas"></canvas>
+        </div>
+
+    </div>
+
+    <!-- Hidden elements -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="processing-canvas"></canvas>
+
+    <script>
+        // --- DOM Elements ---
+        const video = document.getElementById('video');
+        const processingCanvas = document.getElementById('processing-canvas');
+        const procCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+        const outputArea = document.getElementById('output-area');
+        // const asciiContainer = document.getElementById('ascii-container'); // No longer needed for display
+        const outputCanvas = document.getElementById('output-canvas'); // The single display target
+        const outCtx = outputCanvas.getContext('2d');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resolutionSelect = document.getElementById('resolution');
+        const colorModeSelect = document.getElementById('color-mode');
+        const cropPercentSelect = document.getElementById('crop-percent');
+        const sizeSlider = document.getElementById('size-slider');
+        const sizeSliderFill = document.getElementById('size-slider-fill');
+        const sizeSliderHandle = document.getElementById('size-slider-handle');
+        const sizeValueLabel = document.getElementById('size-value-label');
+        const sizeInput = document.getElementById('size-input');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+        // --- State Variables ---
+        const asciiChars = ['@', '%', '#', '*', '+', '=', '-', ':', '.', ' '];
+        let streaming = false;
+        let animationId = null;
+        let sourceWidth = 640;
+        let sourceHeight = 480;
+        let currentSettings = { zoomLevel: 1.0 }; // Includes zoomLevel
+        let isDraggingSlider = false;
+        const BASE_FONT_SIZE = 10; // Base font size for 100% zoom, adjust as needed
+
+        // Pre-calculate fixed colors for performance
+        const MATRIX_GREEN_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--terminal-green').trim() || '#00FF00';
+
+        // --- Initial Setup ---
+        readAndUpdateSettings();
+        updateSliderUI(percentageToSliderValue(currentSettings.zoomLevel * 100));
+        applyZoom();
+        updateFullscreenButton();
+
+        // --- Event Listeners --- (Unchanged)
+        startBtn.addEventListener('click', startCamera); stopBtn.addEventListener('click', stopCamera);
+        resolutionSelect.addEventListener('change', readAndUpdateSettings); colorModeSelect.addEventListener('change', readAndUpdateSettings); cropPercentSelect.addEventListener('change', readAndUpdateSettings);
+        sizeSlider.addEventListener('mousedown', startSliderDrag); sizeSlider.addEventListener('touchstart', startSliderDrag, { passive: false }); sizeSlider.addEventListener('click', handleSliderClick);
+        sizeInput.addEventListener('change', handleSizeInputChange); sizeInput.addEventListener('input', handleSizeInputChange);
+        fullscreenBtn.addEventListener('click', toggleFullscreen); document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+        // --- Core Functions ---
+
+        function startCamera() { /* ... unchanged ... */
+             if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { alert("Webcam not supported."); return; }
+             navigator.mediaDevices.getUserMedia({ video: true })
+                 .then(stream => { video.srcObject = stream; video.play(); startBtn.disabled = true; stopBtn.disabled = false; video.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true }); })
+                 .catch(err => { console.error("Cam Error:", err); alert("Could not access webcam."); startBtn.disabled = false; stopBtn.disabled = true; });
+        }
+        function handleMetadataLoaded() { /* ... unchanged ... */
+             sourceWidth = video.videoWidth; sourceHeight = video.videoHeight; processingCanvas.width = sourceWidth; processingCanvas.height = sourceHeight;
+             streaming = true; readAndUpdateSettings(); requestAnimationFrame(processFrameLoop);
+        }
+        function stopCamera() { /* ... unchanged ... */
+              if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+              streaming = false; startBtn.disabled = false; stopBtn.disabled = true; cancelAnimationFrame(animationId); animationId = null;
+              clearOutputArea("Camera stopped"); console.log("Stopped"); if (isFullscreen()) { exitFullscreen(); }
+        }
+
+        // Simplified: Always clears the canvas
+        function clearOutputArea(message = "") {
+             outCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+             if (message && outputCanvas.width > 0 && outputCanvas.height > 0) {
+                 outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--terminal-bg').trim();
+                 outCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                 outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                 outCtx.textAlign = 'center'; outCtx.font = '16px var(--font-monospace)'; outCtx.textBaseline = 'middle';
+                 outCtx.fillText(message, outputCanvas.width / 2, outputCanvas.height / 2);
+             }
+         }
+
+        // Simplified: No longer needs to manage body classes for display
+        function readAndUpdateSettings() {
+             const currentZoomPercent = parseInt(sizeInput.value) || 100;
+             currentSettings = {
+                 ...currentSettings,
+                 resolutionFactor: parseFloat(resolutionSelect.value),
+                 mode: colorModeSelect.value, // Still need mode for color selection
+                 cropPercent: parseInt(cropPercentSelect.value) / 100,
+             };
+             updateZoomLevel(currentZoomPercent); // Update zoom state & apply transform
+
+             if (streaming) {
+                 calculateTargetDimensions(); // Calc BASE dimensions
+                 applyStyles(); // Apply BASE styles to canvas
+             } else {
+                  clearOutputArea("Camera stopped"); // Clear if stopped
+             }
+             updateSliderUI(percentageToSliderValue(currentSettings.zoomLevel * 100));
+        }
+
+        function applyZoom() { /* ... unchanged ... */
+            if (currentSettings && typeof currentSettings.zoomLevel === 'number') { outputArea.style.transform = `scale(${currentSettings.zoomLevel})`; }
+            else { outputArea.style.transform = 'scale(1.0)'; }
+        }
+        function updateZoomLevel(percentage) { /* ... unchanged ... */
+             let newPercentage = Math.max(50, Math.min(600, percentage));
+             currentSettings.zoomLevel = newPercentage / 100;
+             if (parseInt(sizeInput.value) !== newPercentage) { sizeInput.value = newPercentage; }
+             sizeValueLabel.textContent = `Zoom: ${newPercentage}%`;
+             applyZoom(); updateSliderUI(percentageToSliderValue(newPercentage));
+        }
+
+        // Simplified: Always calculates for the canvas
+        function calculateTargetDimensions() {
+            // --- ADJUST SAMPLING CHARACTER ASPECT RATIO HERE ---
+            const baseCharWidthPx = 10; // CHANGED FROM 8 (Try values 9, 10, or 11)
+            const baseCharHeightPx = 16; // Keep height consistent
+            // -------------------------------------------------
+
+            const sampleWidth = baseCharWidthPx * currentSettings.resolutionFactor;
+            const sampleHeight = baseCharHeightPx * currentSettings.resolutionFactor;
+
+            // Cropping calculations remain the same
+            const cropX = sourceWidth * currentSettings.cropPercent;
+            const cropYTop = sourceHeight * currentSettings.cropPercent * 0.8;
+            const cropYBottom = sourceHeight * currentSettings.cropPercent * 1.2;
+            const croppedWidth = Math.max(1, sourceWidth - 2 * cropX);
+            const croppedHeight = Math.max(1, sourceHeight - cropYTop - cropYBottom);
+
+            // ASCII grid size recalculates based on new sampling cell size
+            currentSettings.asciiWidth = Math.max(1, Math.floor(croppedWidth / sampleWidth));
+            currentSettings.asciiHeight = Math.max(1, Math.floor(croppedHeight / sampleHeight));
+            // Aspect ratio now reflects the ~10/16 ratio
+            currentSettings.asciiAspectRatio = currentSettings.asciiWidth / currentSettings.asciiHeight;
+
+            // Base font size calculation remains the same
+            currentSettings.baseFontSize = BASE_FONT_SIZE;
+
+            // Always calculate dimensions for the canvas based on the *new* aspect ratio
+            currentSettings.outputHeight = Math.round(currentSettings.asciiHeight * currentSettings.baseFontSize * 1.05);
+            currentSettings.outputWidth = Math.round(currentSettings.outputHeight * currentSettings.asciiAspectRatio);
+
+            // Limit base canvas size (logic remains the same)
+            const maxCanvasDim = 4096;
+            if (currentSettings.outputWidth > maxCanvasDim || currentSettings.outputHeight > maxCanvasDim) {
+                 const scaleDownFactor = Math.max(currentSettings.outputWidth / maxCanvasDim, currentSettings.outputHeight / maxCanvasDim);
+                 currentSettings.outputWidth = Math.round(currentSettings.outputWidth / scaleDownFactor);
+                 currentSettings.outputHeight = Math.round(currentSettings.outputHeight / scaleDownFactor);
+            }
+            currentSettings.outputWidth = Math.max(currentSettings.asciiWidth, currentSettings.outputWidth);
+            currentSettings.outputHeight = Math.max(currentSettings.asciiHeight, currentSettings.outputHeight);
+        }
+
+        // Simplified: Always applies styles to the canvas
+        function applyStyles() {
+             if (!currentSettings || isNaN(currentSettings.outputWidth) || isNaN(currentSettings.outputHeight)) return;
+
+             if (currentSettings.outputWidth > 0 && currentSettings.outputHeight > 0) {
+                 outputCanvas.width = currentSettings.outputWidth;
+                 outputCanvas.height = currentSettings.outputHeight;
+                 outputCanvas.style.display = 'block'; // Show the canvas
+                 // Set CSS dimensions for layout before zoom
+                 outputCanvas.style.width = `${currentSettings.outputWidth}px`;
+                 outputCanvas.style.height = `${currentSettings.outputHeight}px`;
+             } else {
+                  outputCanvas.style.display = 'none'; // Hide if dimensions invalid
+             }
+              // Zoom is applied separately by applyZoom()
+        }
+
+        function processFrameLoop() { /* ... unchanged ... */
+            if (!streaming) return; renderAsciiFrame(); animationId = requestAnimationFrame(processFrameLoop);
+        }
+
+        // Simplified: Always calls renderToCanvas
+        function renderAsciiFrame() {
+            if (!streaming || video.paused || video.ended || video.readyState < 3) return;
+
+            // 1. Draw video to processing canvas
+            procCtx.drawImage(video, 0, 0, sourceWidth, sourceHeight);
+
+            // 2. Get pixel data
+            let imageData;
+            try {
+                imageData = procCtx.getImageData(0, 0, sourceWidth, sourceHeight);
+            } catch (e) {
+                console.error("Error getting image data:", e);
+                stopCamera();
+                alert("Error reading video data. Cannot continue.");
+                return;
+            }
+            const pixels = imageData.data;
+
+            // --- Settings ---
+            const {
+                resolutionFactor, mode, cropPercent,
+                asciiWidth, asciiHeight
+            } = currentSettings;
+            if (!asciiWidth || !asciiHeight) return; // Bail if dimensions not calculated yet
+
+
+            // --- Calculations & Verification ---
+            const baseCharWidthPx = 10; // Keep the adjusted value or change as needed
+            const baseCharHeightPx = 16;
+            const sampleWidth = baseCharWidthPx * resolutionFactor;
+            const sampleHeight = baseCharHeightPx * resolutionFactor;
+
+            // Explicitly calculate crop amounts and boundaries
+            const cropAmountX = sourceWidth * cropPercent;
+            const cropAmountYTop = sourceHeight * cropPercent * 0.8;
+            // const cropAmountYBottom = sourceHeight * cropPercent * 1.2; // Not needed for start pos
+
+            const startX = Math.floor(cropAmountX);
+            const startY = Math.floor(cropAmountYTop);
+            // Calculate the intended end X coordinate based on the *original* width and crop
+            const endX = Math.ceil(sourceWidth - cropAmountX);
+            const intendedCroppedWidth = endX - startX;
+
+            // --- LOGGING FOR DEBUGGING ---
+            // console.clear(); // Optional: Clear console each frame for easier reading
+            // console.log(`Source W: ${sourceWidth}, Crop %: ${cropPercent * 100}%`);
+            // console.log(`Crop Amount X: ${cropAmountX.toFixed(2)}`);
+            // console.log(`Calculated startX: ${startX}, Intended endX: ${endX}`);
+            // console.log(`Intended Cropped Width: ${intendedCroppedWidth}`);
+            // console.log(`ASCII Grid: ${asciiWidth} x ${asciiHeight}`);
+            // console.log(`Sample Width: ${sampleWidth.toFixed(2)}`);
+            // const estimatedSampledWidth = asciiWidth * sampleWidth;
+            // console.log(`Estimated Total Sampled Width: ${estimatedSampledWidth.toFixed(2)}`);
+            // console.log(`Sampling Range: [${startX}, ~${(startX + estimatedSampledWidth).toFixed(0)}]`);
+            // --- END LOGGING ---
+
+
+            const sampleStep = 2;
+            const asciiData = [];
+
+            // --- Build ASCII Data ---
+            // The sampling loop *should* work correctly with the calculated startX and asciiWidth
+            for (let y = 0; y < asciiHeight; y++) {
+                const rowData = [];
+                 for (let x = 0; x < asciiWidth; x++) {
+                    let r = 0, g = 0, b = 0, totalBrightness = 0, sampleCount = 0;
+                    // Calculate start of the sampling region based on the determined startX
+                    const regionStartX = Math.floor(startX + x * sampleWidth);
+                    const regionStartY = Math.floor(startY + y * sampleHeight);
+
+                    // Sample within the block (check bounds)
+                    for (let sy = 0; sy < sampleHeight; sy += sampleStep) {
+                        for (let sx = 0; sx < sampleWidth; sx += sampleStep) {
+                            const pixelX = regionStartX + sx;
+                            const pixelY = regionStartY + sy;
+                            // Ensure we don't sample outside the original video bounds
+                            if (pixelX >= 0 && pixelX < sourceWidth && pixelY >= 0 && pixelY < sourceHeight) {
+                                const pixelPos = (pixelY * sourceWidth + pixelX) * 4;
+                                const pr = pixels[pixelPos], pg = pixels[pixelPos + 1], pb = pixels[pixelPos + 2];
+                                r += pr; g += pg; b += pb;
+                                totalBrightness += (pr + pg + pb) / 3;
+                                sampleCount++;
+                            }
+                        }
+                    }
+                    // ... (rest of averaging and character selection remains the same) ...
+                    let avgBrightness = 0, avgR = 0, avgG = 0, avgB_ = 0;
+                    if (sampleCount > 0) { avgBrightness = totalBrightness / sampleCount; avgR = Math.floor(r / sampleCount); avgG = Math.floor(g / sampleCount); avgB_ = Math.floor(b / sampleCount); }
+                    const charIndex = Math.floor(avgBrightness / 256 * asciiChars.length);
+                    const char = asciiChars[Math.min(charIndex, asciiChars.length - 1)];
+                    rowData.push({ char, r: avgR, g: avgG, b: avgB_, brightness: Math.floor(avgBrightness) });
+                }
+                asciiData.push(rowData);
+            }
+
+            // --- Render --- (Always renders to canvas now)
+            renderToCanvas(asciiData);
+        }
+
+        // Make sure renderToCanvas and other functions are present and correct from previous steps
+        // ... (renderToCanvas, other functions) ...
+
+        // Removed renderToDiv function
+
+        // Updated renderToCanvas handles different color modes
+        function renderToCanvas(asciiData) {
+            if (!outputCanvas.width || !outputCanvas.height) return;
+            const { mode, asciiWidth, asciiHeight } = currentSettings; // Get current mode
+            if (!asciiWidth || !asciiHeight) return;
+
+            const cellWidth = outputCanvas.width / asciiWidth;
+            const cellHeight = outputCanvas.height / asciiHeight;
+
+            outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--terminal-bg').trim();
+            outCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+            const adjustedFontSize = Math.min(cellHeight * 0.9, cellWidth / 0.6);
+            outCtx.font = `${Math.max(4, Math.floor(adjustedFontSize))}px var(--font-monospace)`;
+            outCtx.textAlign = 'center'; outCtx.textBaseline = 'middle';
+
+            // Determine color based on mode INSIDE the loop
+            for (let y = 0; y < asciiHeight; y++) {
+                for (let x = 0; x < asciiWidth; x++) {
+                    const cell = asciiData[y][x];
+                    if (!cell) continue;
+
+                    // Set fillStyle based on mode
+                    switch (mode) {
+                        case 'white':
+                            // Use brightness for grayscale, ensure minimum visibility
+                            const bright = Math.max(15, cell.brightness); // Min brightness 15
+                            outCtx.fillStyle = `rgb(${bright}, ${bright}, ${bright})`;
+                            break;
+                        case 'green':
+                            // Use pre-calculated matrix green
+                            outCtx.fillStyle = MATRIX_GREEN_COLOR;
+                            break;
+                        case 'rainbow':
+                        default:
+                            // Use sampled RGB color
+                            outCtx.fillStyle = `rgb(${cell.r}, ${cell.g}, ${cell.b})`;
+                            break;
+                    }
+
+                    const drawX = (x + 0.5) * cellWidth;
+                    const drawY = (y + 0.5) * cellHeight;
+                    outCtx.fillText(cell.char, drawX, drawY);
+                }
+            }
+        }
+
+        // --- Size Slider/Input Functions (Unchanged logic, control zoom) ---
+        function updateSliderUI(sliderPosPercent) { /* ... */ sliderPosPercent=Math.max(0,Math.min(100,sliderPosPercent)); sizeSliderFill.style.width=`${sliderPosPercent}%`; sizeSliderHandle.style.left=`${sliderPosPercent}%`; }
+        function sliderValueToPercentage(sliderValue) { /* ... */ return Math.round(50+(sliderValue/100)*550); }
+        function percentageToSliderValue(percentage) { /* ... */ return Math.max(0,Math.min(100,((percentage-50)/550)*100)); }
+        function startSliderDrag(e) { /* ... */ isDraggingSlider=true; sizeSliderHandle.style.cursor='grabbing'; document.addEventListener('mousemove',handleSliderDrag); document.addEventListener('touchmove',handleSliderDrag,{passive:false}); document.addEventListener('mouseup',stopSliderDrag); document.addEventListener('touchend',stopSliderDrag); handleSliderDrag(e); }
+        function stopSliderDrag() { /* ... */ if(isDraggingSlider){ isDraggingSlider=false; sizeSliderHandle.style.cursor='grab'; document.removeEventListener('mousemove',handleSliderDrag); document.removeEventListener('touchmove',handleSliderDrag); document.removeEventListener('mouseup',stopSliderDrag); document.removeEventListener('touchend',stopSliderDrag); } }
+        function handleSliderClick(e) { /* ... */ if(!isDraggingSlider){ const r=sizeSlider.getBoundingClientRect(); const cX=e.clientX-r.left; const nPP=Math.max(0,Math.min(100,(cX/r.width)*100)); const nP=sliderValueToPercentage(nPP); updateZoomLevel(nP); updateSliderUI(nPP); } }
+        function handleSliderDrag(e) { /* ... */ if(!isDraggingSlider)return; e.preventDefault(); const r=sizeSlider.getBoundingClientRect(); let cX=(e.touches&&e.touches.length>0)?e.touches[0].clientX:e.clientX; const nPos=Math.max(0,Math.min(100,((cX-r.left)/r.width)*100)); const nPer=sliderValueToPercentage(nPos); updateZoomLevel(nPer); updateSliderUI(nPos); }
+        function handleSizeInputChange() { /* ... */ let nS=parseInt(sizeInput.value); if(isNaN(nS))return; updateZoomLevel(nS); }
+
+        // --- Fullscreen Functions --- (Unchanged)
+        function isFullscreen() { /* ... */ return !!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement); }
+        function updateFullscreenButton() { /* ... */ fullscreenBtn.textContent=isFullscreen()?"Exit Fullscreen":"Fullscreen"; }
+        function handleFullscreenChange() { /* ... */ updateFullscreenButton(); if(streaming){setTimeout(()=>{renderAsciiFrame();},100);} }
+        function toggleFullscreen() { /* ... */ if(!isFullscreen()){const el=outputArea; if(el.requestFullscreen)el.requestFullscreen().catch(console.error); else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen().catch(console.error); else if(el.msRequestFullscreen)el.msRequestFullscreen().catch(console.error);}else{exitFullscreen();} }
+        function exitFullscreen() { /* ... */ if(document.exitFullscreen)document.exitFullscreen().catch(console.error); else if(document.webkitExitFullscreen)document.webkitExitFullscreen().catch(console.error); else if(document.msExitFullscreen)document.msExitFullscreen().catch(console.error); }
+
+    </script>
+</body>
 </html>
