@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,13 +12,29 @@
             --control-bg: #2a2a2a;
             --control-hover-bg: #3a3a3a;
             --accent-color: #3a8eff;
-            --terminal-bg: #000000; /* Used for canvas background */
+            --terminal-bg: #000000;
+            /* Used for canvas background */
             --terminal-green: #00ff00;
-            --terminal-white: #ffffff; /* Max brightness for white mode */
+            --terminal-white: #ffffff;
+            /* Max brightness for white mode */
             --font-monospace: 'Consolas', 'Monaco', 'Courier New', monospace;
+
+            /* --- Game Boy Palette --- */
+            --gb-darkest: #0f380f;
+            /* Off-black / Darkest Green */
+            --gb-dark: #306230;
+            /* Dark Green */
+            --gb-light: #8bac0f;
+            /* Light Green */
+            --gb-lightest: #9bbc0f;
+            /* Lightest Green / Off-white */
         }
 
-        html, body { height: 100%; margin: 0; }
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
 
         body {
             font-family: var(--font-monospace);
@@ -43,7 +60,10 @@
             min-height: 0;
         }
 
-        h1 { margin-bottom: 15px; flex-shrink: 0; }
+        h1 {
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
 
         /* --- Output Area (will be scaled) --- */
         #output-area {
@@ -63,8 +83,10 @@
 
         /* --- Output Canvas (Used for ALL modes) --- */
         #output-canvas {
-            display: none; /* Hidden until streaming starts */
-            background-color: var(--terminal-bg); /* Always dark background */
+            display: none;
+            /* Hidden until streaming starts */
+            background-color: var(--terminal-bg);
+            /* Always dark background */
             border: 1px solid var(--control-bg);
             border-radius: 5px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
@@ -76,48 +98,236 @@
         }
 
         /* Hidden Div (No longer used for display) */
-        #ascii-container { display: none; }
+        #ascii-container {
+            display: none;
+        }
 
         /* Hidden video/processing canvas */
-        #video, #processing-canvas { display: none; }
+        #video,
+        #processing-canvas {
+            display: none;
+        }
 
         /* --- Controls --- (Styles remain largely the same) */
-        .controls { /* ... */ margin:15px 0 5px 0; padding:10px 15px; background-color:rgba(42,42,42,0.9); border-radius:8px; display:flex; flex-wrap:wrap; justify-content:center; gap:10px 15px; align-items:center; max-width:95%; flex-shrink:0; position:relative; z-index:10; }
-        .control-group { /* ... */ display:flex; flex-direction:column; align-items:center; gap:5px; }
-        .control-group label, .size-label { /* ... */ font-size:0.85em; color:#ccc; }
-        button, select, input[type="number"] { /* ... */ background-color:var(--control-bg); color:var(--text-color); border:1px solid #444; padding:6px 10px; margin:0 3px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.9em; }
-        button:hover { background-color:var(--control-hover-bg); }
-        button:disabled { background-color:#555; cursor:not-allowed; opacity:0.7; }
-        select { padding:6px 8px; }
-        input[type="number"] { width:60px; text-align:center; }
-        #fullscreen-btn { padding:6px 15px; }
-        .size-slider-container { /* ... */ width:100%; max-width:250px; margin:0 auto; position:relative; }
-        .size-slider { /* ... */ width:100%; height:10px; background:var(--control-bg); border-radius:5px; position:relative; cursor:pointer; border:1px solid #444; }
-        .size-slider-fill { /* ... */ height:100%; background:var(--accent-color); border-radius:5px; width:50%; position:absolute; left:0; top:0; }
-        .size-slider-handle { /* ... */ width:18px; height:18px; background:#fff; border-radius:50%; position:absolute; top:50%; transform:translate(-50%, -50%); left:50%; cursor:grab; box-shadow:0 1px 4px rgba(0,0,0,0.4); border:1px solid #ccc; }
-        .size-slider-handle:active { cursor:grabbing; }
-        .size-slider-labels { /* ... */ display:flex; justify-content:space-between; margin-top:3px; font-size:9px; padding:0 5px; color:#aaa; }
-        .size-value-display { /* ... */ text-align:center; margin-top:5px; font-size:11px; display:flex; justify-content:center; align-items:center; gap:5px; }
+        .controls {
+            /* ... */
+            margin: 15px 0 5px 0;
+            padding: 10px 15px;
+            background-color: rgba(42, 42, 42, 0.9);
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px 15px;
+            align-items: center;
+            max-width: 95%;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .control-group {
+            /* ... */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-group label,
+        .size-label {
+            /* ... */
+            font-size: 0.85em;
+            color: #ccc;
+        }
+
+        button,
+        select,
+        input[type="number"] {
+            /* ... */
+            background-color: var(--control-bg);
+            color: var(--text-color);
+            border: 1px solid #444;
+            padding: 6px 10px;
+            margin: 0 3px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9em;
+        }
+
+        button:hover {
+            background-color: var(--control-hover-bg);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        select {
+            padding: 6px 8px;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            text-align: center;
+        }
+
+        #fullscreen-btn {
+            padding: 6px 15px;
+        }
+
+        .size-slider-container {
+            /* ... */
+            width: 100%;
+            max-width: 250px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .size-slider {
+            /* ... */
+            width: 100%;
+            height: 10px;
+            background: var(--control-bg);
+            border-radius: 5px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #444;
+        }
+
+        .size-slider-fill {
+            /* ... */
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 5px;
+            width: 50%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .size-slider-handle {
+            /* ... */
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            cursor: grab;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            border: 1px solid #ccc;
+        }
+
+        .size-slider-handle:active {
+            cursor: grabbing;
+        }
+
+        .size-slider-labels {
+            /* ... */
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3px;
+            font-size: 9px;
+            padding: 0 5px;
+            color: #aaa;
+        }
+
+        .size-value-display {
+            /* ... */
+            text-align: center;
+            margin-top: 5px;
+            font-size: 11px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
 
         /* --- Fullscreen Styles --- */
-        #output-area:fullscreen { /* ... */ background-color:var(--terminal-bg); padding:0; border:none; overflow:hidden; display:flex; justify-content:center; align-items:center; transform:none !important; }
-        /* Target only the canvas inside fullscreen area */
-        #output-area:fullscreen #output-canvas { max-width:100%; max-height:100%; width:auto; height:auto; border:none; box-shadow:none; object-fit:contain; transform:none !important; border-radius: 0; /* Reset radius for fullscreen */ }
+        #output-area:fullscreen {
+            /* ... */
+            background-color: var(--terminal-bg);
+            padding: 0;
+            border: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: none !important;
+        }
 
+        /* Target only the canvas inside fullscreen area */
+        #output-area:fullscreen #output-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            border: none;
+            box-shadow: none;
+            object-fit: contain;
+            transform: none !important;
+            border-radius: 0;
+            /* Reset radius for fullscreen */
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>ASCII Webcam Art</h1>
+        <h3>by Giufus</h3>
 
         <div class="controls">
-             <!-- Controls Structure Unchanged -->
-             <div class="control-group"><label>Camera</label><div><button id="start-btn">Start</button><button id="stop-btn" disabled>Stop</button></div></div>
-             <div class="control-group"><label for="resolution">Resolution</label><select id="resolution"><option value="0.5">Highest</option><option value="1">High</option><option value="2" selected>Medium</option><option value="4">Low</option></select></div>
-             <div class="control-group"><label for="color-mode">Color Mode</label><select id="color-mode"><option value="green">Matrix Green</option><option value="white">White</option><option value="rainbow">Rainbow</option></select></div>
-             <div class="control-group"><label for="crop-percent">Crop Amount</label><select id="crop-percent"><option value="0">0%</option><option value="10">10%</option><option value="20" selected>20%</option><option value="30">30%</option><option value="40">40%</option></select></div>
-             <div class="control-group"><label class="size-label">Display Zoom</label><div class="size-slider-container"><div class="size-slider" id="size-slider"><div class="size-slider-fill" id="size-slider-fill"></div><div class="size-slider-handle" id="size-slider-handle"></div></div><div class="size-slider-labels"><span>50%</span><span>100%</span><span>600%</span></div></div><div class="size-value-display"><span id="size-value-label">Zoom: 100%</span><input type="number" id="size-input" min="50" max="600" value="100" step="10"> %</div></div>
-             <div class="control-group"><label>View</label><button id="fullscreen-btn">Fullscreen</button></div>
+            <!-- Controls Structure Unchanged -->
+            <div class="control-group"><label>Camera</label>
+                <div><button id="start-btn">Start</button><button id="stop-btn" disabled>Stop</button></div>
+            </div>
+            <div class="control-group"><label for="resolution">Resolution</label><select id="resolution">
+                    <option value="0.5">Highest</option>
+                    <option value="1">High</option>
+                    <option value="2" selected>Medium</option>
+                    <option value="4">Low</option>
+                </select></div>
+            <div class="control-group">
+                <label for="ascii-set">ASCII Set</label>
+                <select id="ascii-set">
+                    <option value="blocky_1" selected>Blocky 1(-=+░)</option>
+                    <option value="blocky_2" selected>Blocky 2(░@#╬)</option>
+                    <option value="classic">Detailed (@%#?)</option>
+                    <option value="kanji">Kanji (日月火水)</option>
+                </select>
+            </div>
+            <div class="control-group"><label for="color-mode">Color Mode</label><select id="color-mode">
+                    <option value="green">Matrix Green</option>
+                    <option value="white">White</option>
+                    <option value="rainbow">Rainbow</option>
+                    <option value="gameboy">Game Boy</option>
+                </select></div>
+            <div class="control-group"><label for="crop-percent">Crop Amount</label><select id="crop-percent">
+                    <option value="0">0%</option>
+                    <option value="10">10%</option>
+                    <option value="20" selected>20%</option>
+                    <option value="30">30%</option>
+                    <option value="40">40%</option>
+                </select></div>
+            <div class="control-group"><label class="size-label">Display Zoom</label>
+                <div class="size-slider-container">
+                    <div class="size-slider" id="size-slider">
+                        <div class="size-slider-fill" id="size-slider-fill"></div>
+                        <div class="size-slider-handle" id="size-slider-handle"></div>
+                    </div>
+                    <div class="size-slider-labels"><span>50%</span><span>100%</span><span>600%</span></div>
+                </div>
+                <div class="size-value-display"><span id="size-value-label">Zoom: 100%</span><input type="number"
+                        id="size-input" min="50" max="600" value="100" step="10"> %</div>
+            </div>
+            <div class="control-group"><label>View</label><button id="fullscreen-btn">Fullscreen</button></div>
         </div>
 
         <!-- Output Area: contains only the canvas now -->
@@ -144,6 +354,7 @@
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const resolutionSelect = document.getElementById('resolution');
+        const asciiSetSelect = document.getElementById('ascii-set');
         const colorModeSelect = document.getElementById('color-mode');
         const cropPercentSelect = document.getElementById('crop-percent');
         const sizeSlider = document.getElementById('size-slider');
@@ -154,7 +365,15 @@
         const fullscreenBtn = document.getElementById('fullscreen-btn');
 
         // --- State Variables ---
-        const asciiChars = ['@', '%', '#', '*', '+', '=', '-', ':', '.', ' '];
+        //const asciiChars = ['@', '%', '#', '*', '+', '=', '-', ':', '.', ' '];
+        const ASCII_SETS = {
+            classic: ['@', '%', '#', '*', '+', '=', '-', ':', '.', ' '],
+            kanji: [..."日月火水木金土人年時空心夢愛神死力風雨海山"],
+            blocky_1: [..." .:-=+░▒▓▓"].reverse(),
+            blocky_2: [..."█▓▒░@#╬╣║≡+=-:. "],
+        }
+        //const asciiKeys = Object.keys(ASCII_SETS);
+        //const asciiChars = ASCII_SETS[asciiKeys[Math.floor(Math.random() * asciiKeys.length)]];
         let streaming = false;
         let animationId = null;
         let sourceWidth = 640;
@@ -166,6 +385,18 @@
         // Pre-calculate fixed colors for performance
         const MATRIX_GREEN_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--terminal-green').trim() || '#00FF00';
 
+        let gbColors = {};
+        function updateGbColors() {
+            const styles = getComputedStyle(document.documentElement);
+            gbColors = {
+                darkest: styles.getPropertyValue('--gb-darkest').trim() || '#0f380f',
+                dark: styles.getPropertyValue('--gb-dark').trim() || '#306230',
+                light: styles.getPropertyValue('--gb-light').trim() || '#8bac0f',
+                lightest: styles.getPropertyValue('--gb-lightest').trim() || '#9bbc0f',
+            };
+        }
+        updateGbColors(); // Initial load
+
         // --- Initial Setup ---
         readAndUpdateSettings();
         updateSliderUI(percentageToSliderValue(currentSettings.zoomLevel * 100));
@@ -174,7 +405,10 @@
 
         // --- Event Listeners --- (Unchanged)
         startBtn.addEventListener('click', startCamera); stopBtn.addEventListener('click', stopCamera);
-        resolutionSelect.addEventListener('change', readAndUpdateSettings); colorModeSelect.addEventListener('change', readAndUpdateSettings); cropPercentSelect.addEventListener('change', readAndUpdateSettings);
+        resolutionSelect.addEventListener('change', readAndUpdateSettings);
+        asciiSetSelect.addEventListener('change', readAndUpdateSettings);
+        colorModeSelect.addEventListener('change', readAndUpdateSettings);
+        cropPercentSelect.addEventListener('change', readAndUpdateSettings);
         sizeSlider.addEventListener('mousedown', startSliderDrag); sizeSlider.addEventListener('touchstart', startSliderDrag, { passive: false }); sizeSlider.addEventListener('click', handleSliderClick);
         sizeInput.addEventListener('change', handleSizeInputChange); sizeInput.addEventListener('input', handleSizeInputChange);
         fullscreenBtn.addEventListener('click', toggleFullscreen); document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -182,51 +416,54 @@
         // --- Core Functions ---
 
         function startCamera() { /* ... unchanged ... */
-             if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { alert("Webcam not supported."); return; }
-             navigator.mediaDevices.getUserMedia({ video: true })
-                 .then(stream => { video.srcObject = stream; video.play(); startBtn.disabled = true; stopBtn.disabled = false; video.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true }); })
-                 .catch(err => { console.error("Cam Error:", err); alert("Could not access webcam."); startBtn.disabled = false; stopBtn.disabled = true; });
+            if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { alert("Webcam not supported."); return; }
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => { video.srcObject = stream; video.play(); startBtn.disabled = true; stopBtn.disabled = false; video.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true }); })
+                .catch(err => { console.error("Cam Error:", err); alert("Could not access webcam."); startBtn.disabled = false; stopBtn.disabled = true; });
         }
         function handleMetadataLoaded() { /* ... unchanged ... */
-             sourceWidth = video.videoWidth; sourceHeight = video.videoHeight; processingCanvas.width = sourceWidth; processingCanvas.height = sourceHeight;
-             streaming = true; readAndUpdateSettings(); requestAnimationFrame(processFrameLoop);
+            sourceWidth = video.videoWidth; sourceHeight = video.videoHeight; processingCanvas.width = sourceWidth; processingCanvas.height = sourceHeight;
+            streaming = true; readAndUpdateSettings(); requestAnimationFrame(processFrameLoop);
         }
         function stopCamera() { /* ... unchanged ... */
-              if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-              streaming = false; startBtn.disabled = false; stopBtn.disabled = true; cancelAnimationFrame(animationId); animationId = null;
-              clearOutputArea("Camera stopped"); console.log("Stopped"); if (isFullscreen()) { exitFullscreen(); }
+            if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+            streaming = false; startBtn.disabled = false; stopBtn.disabled = true; cancelAnimationFrame(animationId); animationId = null;
+            clearOutputArea("Camera stopped"); console.log("Stopped"); if (isFullscreen()) { exitFullscreen(); }
         }
 
         // Simplified: Always clears the canvas
         function clearOutputArea(message = "") {
-             outCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
-             if (message && outputCanvas.width > 0 && outputCanvas.height > 0) {
-                 outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--terminal-bg').trim();
-                 outCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
-                 outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-                 outCtx.textAlign = 'center'; outCtx.font = '16px var(--font-monospace)'; outCtx.textBaseline = 'middle';
-                 outCtx.fillText(message, outputCanvas.width / 2, outputCanvas.height / 2);
-             }
-         }
+            outCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+            if (message && outputCanvas.width > 0 && outputCanvas.height > 0) {
+                outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--terminal-bg').trim();
+                outCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                outCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                outCtx.textAlign = 'center'; outCtx.font = '16px var(--font-monospace)'; outCtx.textBaseline = 'middle';
+                outCtx.fillText(message, outputCanvas.width / 2, outputCanvas.height / 2);
+            }
+        }
 
         // Simplified: No longer needs to manage body classes for display
         function readAndUpdateSettings() {
-             const currentZoomPercent = parseInt(sizeInput.value) || 100;
-             currentSettings = {
-                 ...currentSettings,
-                 resolutionFactor: parseFloat(resolutionSelect.value),
-                 mode: colorModeSelect.value, // Still need mode for color selection
-                 cropPercent: parseInt(cropPercentSelect.value) / 100,
-             };
-             updateZoomLevel(currentZoomPercent); // Update zoom state & apply transform
+            const currentZoomPercent = parseInt(sizeInput.value) || 100;
+            const selectedAsciiSet = asciiSetSelect.value;
+            currentSettings = {
+                ...currentSettings,
+                resolutionFactor: parseFloat(resolutionSelect.value),
+                asciiSetName: selectedAsciiSet,
+                mode: colorModeSelect.value, // Still need mode for color selection
+                cropPercent: parseInt(cropPercentSelect.value) / 100,
+            };
+            updateZoomLevel(currentZoomPercent); // Update zoom state & apply transform
+            currentAsciiChars = ASCII_SETS[currentSettings.asciiSetName] || ASCII_SETS.blocky_1;
 
-             if (streaming) {
-                 calculateTargetDimensions(); // Calc BASE dimensions
-                 applyStyles(); // Apply BASE styles to canvas
-             } else {
-                  clearOutputArea("Camera stopped"); // Clear if stopped
-             }
-             updateSliderUI(percentageToSliderValue(currentSettings.zoomLevel * 100));
+            if (streaming) {
+                calculateTargetDimensions(); // Calc BASE dimensions
+                applyStyles(); // Apply BASE styles to canvas
+            } else {
+                clearOutputArea("Camera stopped"); // Clear if stopped
+            }
+            updateSliderUI(percentageToSliderValue(currentSettings.zoomLevel * 100));
         }
 
         function applyZoom() { /* ... unchanged ... */
@@ -234,11 +471,11 @@
             else { outputArea.style.transform = 'scale(1.0)'; }
         }
         function updateZoomLevel(percentage) { /* ... unchanged ... */
-             let newPercentage = Math.max(50, Math.min(600, percentage));
-             currentSettings.zoomLevel = newPercentage / 100;
-             if (parseInt(sizeInput.value) !== newPercentage) { sizeInput.value = newPercentage; }
-             sizeValueLabel.textContent = `Zoom: ${newPercentage}%`;
-             applyZoom(); updateSliderUI(percentageToSliderValue(newPercentage));
+            let newPercentage = Math.max(50, Math.min(600, percentage));
+            currentSettings.zoomLevel = newPercentage / 100;
+            if (parseInt(sizeInput.value) !== newPercentage) { sizeInput.value = newPercentage; }
+            sizeValueLabel.textContent = `Zoom: ${newPercentage}%`;
+            applyZoom(); updateSliderUI(percentageToSliderValue(newPercentage));
         }
 
         // Simplified: Always calculates for the canvas
@@ -274,9 +511,9 @@
             // Limit base canvas size (logic remains the same)
             const maxCanvasDim = 4096;
             if (currentSettings.outputWidth > maxCanvasDim || currentSettings.outputHeight > maxCanvasDim) {
-                 const scaleDownFactor = Math.max(currentSettings.outputWidth / maxCanvasDim, currentSettings.outputHeight / maxCanvasDim);
-                 currentSettings.outputWidth = Math.round(currentSettings.outputWidth / scaleDownFactor);
-                 currentSettings.outputHeight = Math.round(currentSettings.outputHeight / scaleDownFactor);
+                const scaleDownFactor = Math.max(currentSettings.outputWidth / maxCanvasDim, currentSettings.outputHeight / maxCanvasDim);
+                currentSettings.outputWidth = Math.round(currentSettings.outputWidth / scaleDownFactor);
+                currentSettings.outputHeight = Math.round(currentSettings.outputHeight / scaleDownFactor);
             }
             currentSettings.outputWidth = Math.max(currentSettings.asciiWidth, currentSettings.outputWidth);
             currentSettings.outputHeight = Math.max(currentSettings.asciiHeight, currentSettings.outputHeight);
@@ -284,19 +521,19 @@
 
         // Simplified: Always applies styles to the canvas
         function applyStyles() {
-             if (!currentSettings || isNaN(currentSettings.outputWidth) || isNaN(currentSettings.outputHeight)) return;
+            if (!currentSettings || isNaN(currentSettings.outputWidth) || isNaN(currentSettings.outputHeight)) return;
 
-             if (currentSettings.outputWidth > 0 && currentSettings.outputHeight > 0) {
-                 outputCanvas.width = currentSettings.outputWidth;
-                 outputCanvas.height = currentSettings.outputHeight;
-                 outputCanvas.style.display = 'block'; // Show the canvas
-                 // Set CSS dimensions for layout before zoom
-                 outputCanvas.style.width = `${currentSettings.outputWidth}px`;
-                 outputCanvas.style.height = `${currentSettings.outputHeight}px`;
-             } else {
-                  outputCanvas.style.display = 'none'; // Hide if dimensions invalid
-             }
-              // Zoom is applied separately by applyZoom()
+            if (currentSettings.outputWidth > 0 && currentSettings.outputHeight > 0) {
+                outputCanvas.width = currentSettings.outputWidth;
+                outputCanvas.height = currentSettings.outputHeight;
+                outputCanvas.style.display = 'block'; // Show the canvas
+                // Set CSS dimensions for layout before zoom
+                outputCanvas.style.width = `${currentSettings.outputWidth}px`;
+                outputCanvas.style.height = `${currentSettings.outputHeight}px`;
+            } else {
+                outputCanvas.style.display = 'none'; // Hide if dimensions invalid
+            }
+            // Zoom is applied separately by applyZoom()
         }
 
         function processFrameLoop() { /* ... unchanged ... */
@@ -368,7 +605,7 @@
             // The sampling loop *should* work correctly with the calculated startX and asciiWidth
             for (let y = 0; y < asciiHeight; y++) {
                 const rowData = [];
-                 for (let x = 0; x < asciiWidth; x++) {
+                for (let x = 0; x < asciiWidth; x++) {
                     let r = 0, g = 0, b = 0, totalBrightness = 0, sampleCount = 0;
                     // Calculate start of the sampling region based on the determined startX
                     const regionStartX = Math.floor(startX + x * sampleWidth);
@@ -392,8 +629,8 @@
                     // ... (rest of averaging and character selection remains the same) ...
                     let avgBrightness = 0, avgR = 0, avgG = 0, avgB_ = 0;
                     if (sampleCount > 0) { avgBrightness = totalBrightness / sampleCount; avgR = Math.floor(r / sampleCount); avgG = Math.floor(g / sampleCount); avgB_ = Math.floor(b / sampleCount); }
-                    const charIndex = Math.floor(avgBrightness / 256 * asciiChars.length);
-                    const char = asciiChars[Math.min(charIndex, asciiChars.length - 1)];
+                    const charIndex = Math.floor(avgBrightness / 256 * currentAsciiChars.length); // Use length of current set
+                    const char = currentAsciiChars[Math.min(charIndex, currentAsciiChars.length - 1)]; // Use current set
                     rowData.push({ char, r: avgR, g: avgG, b: avgB_, brightness: Math.floor(avgBrightness) });
                 }
                 asciiData.push(rowData);
@@ -437,10 +674,26 @@
                             const bright = Math.max(15, cell.brightness); // Min brightness 15
                             outCtx.fillStyle = `rgb(${bright}, ${bright}, ${bright})`;
                             break;
+
                         case 'green':
                             // Use pre-calculated matrix green
                             outCtx.fillStyle = MATRIX_GREEN_COLOR;
                             break;
+
+                        case 'gameboy':
+                            const brightness = cell.brightness; // 0-255
+                            // Map brightness to 4 Game Boy colors
+                            if (brightness < 64) { // 0 - 63
+                                outCtx.fillStyle = gbColors.darkest;
+                            } else if (brightness < 128) { // 64 - 127
+                                outCtx.fillStyle = gbColors.dark;
+                            } else if (brightness < 192) { // 128 - 191
+                                outCtx.fillStyle = gbColors.light;
+                            } else { // 192 - 255
+                                outCtx.fillStyle = gbColors.lightest;
+                            }
+                            break;
+
                         case 'rainbow':
                         default:
                             // Use sampled RGB color
@@ -456,22 +709,23 @@
         }
 
         // --- Size Slider/Input Functions (Unchanged logic, control zoom) ---
-        function updateSliderUI(sliderPosPercent) { /* ... */ sliderPosPercent=Math.max(0,Math.min(100,sliderPosPercent)); sizeSliderFill.style.width=`${sliderPosPercent}%`; sizeSliderHandle.style.left=`${sliderPosPercent}%`; }
-        function sliderValueToPercentage(sliderValue) { /* ... */ return Math.round(50+(sliderValue/100)*550); }
-        function percentageToSliderValue(percentage) { /* ... */ return Math.max(0,Math.min(100,((percentage-50)/550)*100)); }
-        function startSliderDrag(e) { /* ... */ isDraggingSlider=true; sizeSliderHandle.style.cursor='grabbing'; document.addEventListener('mousemove',handleSliderDrag); document.addEventListener('touchmove',handleSliderDrag,{passive:false}); document.addEventListener('mouseup',stopSliderDrag); document.addEventListener('touchend',stopSliderDrag); handleSliderDrag(e); }
-        function stopSliderDrag() { /* ... */ if(isDraggingSlider){ isDraggingSlider=false; sizeSliderHandle.style.cursor='grab'; document.removeEventListener('mousemove',handleSliderDrag); document.removeEventListener('touchmove',handleSliderDrag); document.removeEventListener('mouseup',stopSliderDrag); document.removeEventListener('touchend',stopSliderDrag); } }
-        function handleSliderClick(e) { /* ... */ if(!isDraggingSlider){ const r=sizeSlider.getBoundingClientRect(); const cX=e.clientX-r.left; const nPP=Math.max(0,Math.min(100,(cX/r.width)*100)); const nP=sliderValueToPercentage(nPP); updateZoomLevel(nP); updateSliderUI(nPP); } }
-        function handleSliderDrag(e) { /* ... */ if(!isDraggingSlider)return; e.preventDefault(); const r=sizeSlider.getBoundingClientRect(); let cX=(e.touches&&e.touches.length>0)?e.touches[0].clientX:e.clientX; const nPos=Math.max(0,Math.min(100,((cX-r.left)/r.width)*100)); const nPer=sliderValueToPercentage(nPos); updateZoomLevel(nPer); updateSliderUI(nPos); }
-        function handleSizeInputChange() { /* ... */ let nS=parseInt(sizeInput.value); if(isNaN(nS))return; updateZoomLevel(nS); }
+        function updateSliderUI(sliderPosPercent) { /* ... */ sliderPosPercent = Math.max(0, Math.min(100, sliderPosPercent)); sizeSliderFill.style.width = `${sliderPosPercent}%`; sizeSliderHandle.style.left = `${sliderPosPercent}%`; }
+        function sliderValueToPercentage(sliderValue) { /* ... */ return Math.round(50 + (sliderValue / 100) * 550); }
+        function percentageToSliderValue(percentage) { /* ... */ return Math.max(0, Math.min(100, ((percentage - 50) / 550) * 100)); }
+        function startSliderDrag(e) { /* ... */ isDraggingSlider = true; sizeSliderHandle.style.cursor = 'grabbing'; document.addEventListener('mousemove', handleSliderDrag); document.addEventListener('touchmove', handleSliderDrag, { passive: false }); document.addEventListener('mouseup', stopSliderDrag); document.addEventListener('touchend', stopSliderDrag); handleSliderDrag(e); }
+        function stopSliderDrag() { /* ... */ if (isDraggingSlider) { isDraggingSlider = false; sizeSliderHandle.style.cursor = 'grab'; document.removeEventListener('mousemove', handleSliderDrag); document.removeEventListener('touchmove', handleSliderDrag); document.removeEventListener('mouseup', stopSliderDrag); document.removeEventListener('touchend', stopSliderDrag); } }
+        function handleSliderClick(e) { /* ... */ if (!isDraggingSlider) { const r = sizeSlider.getBoundingClientRect(); const cX = e.clientX - r.left; const nPP = Math.max(0, Math.min(100, (cX / r.width) * 100)); const nP = sliderValueToPercentage(nPP); updateZoomLevel(nP); updateSliderUI(nPP); } }
+        function handleSliderDrag(e) { /* ... */ if (!isDraggingSlider) return; e.preventDefault(); const r = sizeSlider.getBoundingClientRect(); let cX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX; const nPos = Math.max(0, Math.min(100, ((cX - r.left) / r.width) * 100)); const nPer = sliderValueToPercentage(nPos); updateZoomLevel(nPer); updateSliderUI(nPos); }
+        function handleSizeInputChange() { /* ... */ let nS = parseInt(sizeInput.value); if (isNaN(nS)) return; updateZoomLevel(nS); }
 
         // --- Fullscreen Functions --- (Unchanged)
-        function isFullscreen() { /* ... */ return !!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement); }
-        function updateFullscreenButton() { /* ... */ fullscreenBtn.textContent=isFullscreen()?"Exit Fullscreen":"Fullscreen"; }
-        function handleFullscreenChange() { /* ... */ updateFullscreenButton(); if(streaming){setTimeout(()=>{renderAsciiFrame();},100);} }
-        function toggleFullscreen() { /* ... */ if(!isFullscreen()){const el=outputArea; if(el.requestFullscreen)el.requestFullscreen().catch(console.error); else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen().catch(console.error); else if(el.msRequestFullscreen)el.msRequestFullscreen().catch(console.error);}else{exitFullscreen();} }
-        function exitFullscreen() { /* ... */ if(document.exitFullscreen)document.exitFullscreen().catch(console.error); else if(document.webkitExitFullscreen)document.webkitExitFullscreen().catch(console.error); else if(document.msExitFullscreen)document.msExitFullscreen().catch(console.error); }
+        function isFullscreen() { /* ... */ return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement); }
+        function updateFullscreenButton() { /* ... */ fullscreenBtn.textContent = isFullscreen() ? "Exit Fullscreen" : "Fullscreen"; }
+        function handleFullscreenChange() { /* ... */ updateFullscreenButton(); if (streaming) { setTimeout(() => { renderAsciiFrame(); }, 100); } }
+        function toggleFullscreen() { /* ... */ if (!isFullscreen()) { const el = outputArea; if (el.requestFullscreen) el.requestFullscreen().catch(console.error); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(console.error); else if (el.msRequestFullscreen) el.msRequestFullscreen().catch(console.error); } else { exitFullscreen(); } }
+        function exitFullscreen() { /* ... */ if (document.exitFullscreen) document.exitFullscreen().catch(console.error); else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(console.error); else if (document.msExitFullscreen) document.msExitFullscreen().catch(console.error); }
 
     </script>
 </body>
+
 </html>
